@@ -1,0 +1,172 @@
+[
+	{
+		"Name": "someOperationPre",
+		"SpanContext": {
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"Attributes": [
+			{
+				"Key": "arr",
+				"Value": {
+					"Type": "ARRAY",
+					"Value": [
+						"foo",
+						"bar"
+					]
+				}
+			}
+		],
+		"Events": null,
+		"Links": null,
+		"Status": {
+			"Code": "Unset",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "go.opentelemetry.io/otel/sdk/tracer",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	},
+	{
+		"Name": "newname",
+		"SpanContext": {
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"Attributes": null,
+		"Events": [
+			{
+				"Name": "SomeOperationError",
+				"Attributes": null,
+				"DroppedAttributeCount": 0,
+			}
+		],
+		"Links": null,
+		"Status": {
+			"Code": "Ok",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "errorOperator",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	},
+	{
+		"Name": "worker.doWork",
+		"SpanContext": {
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceFlags": "00",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"Attributes": [
+			{
+				"Key": "hello",
+				"Value": {
+					"Type": "BOOL",
+					"Value": true
+				}
+			},
+			{
+				"Key": "result",
+				"Value": {
+					"Type": "STRING",
+					"Value": "result"
+				}
+			}
+		],
+		"Events": [
+			{
+				"Name": "exception",
+				"Attributes": [
+					{
+						"Key": "exception.type",
+						"Value": {
+							"Type": "STRING",
+							"Value": "*errors.errorString"
+						}
+					},
+					{
+						"Key": "exception.message",
+						"Value": {
+							"Type": "STRING",
+							"Value": "some operation failed"
+						}
+					}
+				],
+				"DroppedAttributeCount": 0,
+			}
+		],
+		"Links": null,
+		"Status": {
+			"Code": "Unset",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "worker",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
