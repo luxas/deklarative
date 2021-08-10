@@ -1,0 +1,92 @@
+# Configuration for the golangci-lint linters.
+run:
+  timeout: 5m
+linters:
+  # As per all the listed linters in https://golangci-lint.run/usage/linters
+  # at v1.41.1, in the same order as on the webpage. Linters that we don't want
+  # are commented out for reference, optionally with a comment why.
+  # Deprecated or replaced linters are not listed here.
+  enable:
+  - asciicheck
+  - bodyclose
+  - cyclop
+  # depguard
+  - dogsled
+  - dupl
+  - durationcheck
+  - errorlint
+  - exhaustive
+  # exhaustivestruct
+  - exportloopref
+  # forbidigo
+  - forcetypeassert
+  # funlen
+  - gci
+  - gochecknoglobals
+  - gochecknoinits
+  # gocognit
+  - goconst
+  - gocritic
+  # gocyclo
+  - godot
+  # godox
+  - goerr113
+  - gofmt
+  # gofumpt
+  # goheader
+  - goimports
+  # gomnd
+  # gomoddirectives
+  # gomodguard
+  - goprintffuncname
+  - gosec
+  - ifshort
+  - importas
+  # lll
+  - makezero
+  - misspell
+  - nakedret
+  - nestif
+  # Not available yet, first in v1.42:
+  # nilassign
+  - nilerr
+  # nlreturn
+  - noctx
+  - nolintlint
+  # paralleltest
+  - prealloc
+  - predeclared
+  # promlinter
+  - revive
+  # rowserrcheck
+  # sqlclosecheck
+  - stylecheck
+  - tagliatelle
+  # testpackage
+  - thelper
+  - tparallel
+  - unconvert
+  - unparam
+  - wastedassign
+  # whitespace
+  # wrapcheck
+  # wsl
+
+
+linters-settings:
+  godot:
+    # Check comments for all declarations, and make sure sentences are capitalized.
+    scope: declarations
+    capital: true
+  revive:
+    # TODO: Revise this later; disable not-needed ones.
+    enable-all-rules: true
+
+issues:
+  # By default, golangci-lint excludes some common (but still problematic) issues
+  # reported by linters configured above. We want to output all issues that arise
+  # from the configured linters, so disable exclusion of found issues.
+  #
+  # TODO: For now, let's keep excluding errors, but change this to false once
+  # the errors have been fixed.
+  exclude-use-default: true
