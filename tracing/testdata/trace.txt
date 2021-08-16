@@ -121,6 +121,20 @@
 					"Type": "STRING",
 					"Value": "result"
 				}
+			},
+			{
+				"Key": "log-attr-hello",
+				"Value": {
+					"Type": "FLOAT64",
+					"Value": -1.2
+				}
+			},
+			{
+				"Key": "log-attr-op-result",
+				"Value": {
+					"Type": "INT64",
+					"Value": -1
+				}
 			}
 		],
 		"Events": [
@@ -131,14 +145,14 @@
 						"Key": "exception.type",
 						"Value": {
 							"Type": "STRING",
-							"Value": "*errors.errorString"
+							"Value": "*fmt.wrapError"
 						}
 					},
 					{
 						"Key": "exception.message",
 						"Value": {
 							"Type": "STRING",
-							"Value": "some operation failed"
+							"Value": "some operation failed: unexpected thing happened"
 						}
 					}
 				],
