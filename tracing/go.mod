@@ -2,6 +2,9 @@ module github.com/luxas/deklarative-api-runtime/tracing
 
 go 1.16
 
+// TODO: Fix this log level propagation issue upstream.
+replace github.com/go-logr/zapr => github.com/luxas/zapr v0.4.1
+
 require (
 	github.com/go-logr/logr v0.4.0
 	github.com/go-logr/zapr v0.4.0
@@ -13,5 +16,5 @@ require (
 	go.opentelemetry.io/otel/sdk v1.0.0-RC2
 	go.opentelemetry.io/otel/trace v1.0.0-RC2
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.18.1
+	go.uber.org/zap v1.19.0
 )
