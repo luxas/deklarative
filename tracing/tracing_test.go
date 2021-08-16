@@ -5,19 +5,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"regexp"
 	"testing"
 
 	"github.com/go-logr/logr"
+	"github.com/luxas/deklarative-api-runtime/tracing/zaplog"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap/zapcore"
 )
+
+func TestTp(t *testing.T) {
+	ctx := context.Background()
+	span := trace.SpanFromContext(ctx)
+	assert.True(t, span.TracerProvider() == noopProvider)
+}
+
+func TestLogDiscard(t *testing.T) {
+	ctx := context.Background()
+	log := logr.FromContextOrDiscard(ctx)
+	assert.True(t, logr.Discard() == log)
+}
 
 func replaceLinePattern(substr string) string {
 	return "(?m)^.*" + substr + ".*$[\r\n]+"
@@ -26,41 +37,45 @@ func replaceLinePattern(substr string) string {
 // used to replace the source code lines that are output in the stack trace.
 //nolint:gochecknoglobals
 var (
-	logReplacePattern     = regexp.MustCompile(replaceLinePattern("deklarative-api-runtime/tracing/tracing"))
 	spanIDReplacePattern  = regexp.MustCompile(replaceLinePattern(`"SpanID"`))
 	traceIDReplacePattern = regexp.MustCompile(replaceLinePattern(`"TraceID"`))
 	timeReplacePattern    = regexp.MustCompile(replaceLinePattern(`Time`))
 	traceReplacePatterns  = []*regexp.Regexp{spanIDReplacePattern, traceIDReplacePattern, timeReplacePattern}
 )
 
-func TestFuncTracer(t *testing.T) {
-
+func TestTracer(t *testing.T) {
 	// Register the global logging tracerprovider, capture "stdout" to traceBuf
 	var traceBuf bytes.Buffer
-	err := NewBuilder().
-		RegisterStdoutExporter(stdouttrace.WithWriter(&traceBuf)).
-		WithLogging(true).
-		InstallGlobally()
+	tp, err := Provider().
+		WithStdoutExporter(stdouttrace.WithWriter(&traceBuf)).
+		Build()
 	assert.Nil(t, err)
 
 	var logBuf bytes.Buffer
-	log := HumanReadableLogger(&logBuf, zapcore.InfoLevel)
+	log := NewZap().
+		Console().
+		NoTimestamps().
+		AtLevel(1).
+		LogTo(&logBuf).
+		Build()
 
-	ctx := Context(true)
-	ctx = logr.NewContext(ctx, log)
+	log.Info("executing TestTracer")
+
+	ctx := Context(WithLogger(log), WithTracerProvider(tp))
 	err = doWork(ctx, t)
 	assert.ErrorIs(t, err, errSomeOperation)
 
 	wantLog, err := os.ReadFile("testdata/log.txt")
 	assert.Nil(t, err)
 
-	gotLog := logReplacePattern.ReplaceAllString(logBuf.String(), "")
-	assert.Equal(t, string(wantLog), gotLog)
+	gotLog := zaplog.FilterStacktraceOrigins(logBuf.Bytes())
+	assert.Equal(t, string(wantLog), string(gotLog))
 
 	wantTrace, err := os.ReadFile("testdata/trace.txt")
 	assert.Nil(t, err)
 
-	err = ForceFlushGlobal(context.Background(), 0)
+	bgCtx := context.Background()
+	err = ForceFlush(bgCtx, WithTracerProvider(tp))
 	assert.Nil(t, err)
 
 	gotTrace := traceBuf.String()
@@ -69,84 +84,63 @@ func TestFuncTracer(t *testing.T) {
 	}
 	assert.Equal(t, string(wantTrace), gotTrace)
 
-	err = ShutdownGlobal(context.Background(), 0)
+	err = Shutdown(bgCtx, WithTracerProvider(tp))
 	assert.Nil(t, err)
 }
 
-func doWork(ctx context.Context, t *testing.T) error { //nolint:thelper
-	return FromContext(ctx, "worker").TraceFunc(ctx, "doWork",
-		func(ctx context.Context, span trace.Span) error {
-			result := "result"
-			span.SetAttributes(attribute.String("result", result))
+func doWork(ctx context.Context, t *testing.T) (retErr error) { //nolint:thelper
+	ctx, span, log := Tracer().
+		Capture(&retErr).
+		WithActor("worker").
+		WithAttributes(attribute.Bool("hello", true)).
+		AddLevel(1).
+		Trace(ctx, "doWork")
+	defer span.End()
 
-			assert.True(t, span.IsRecording())
+	result := "result"
+	span.SetAttributes(attribute.String("result", result))
+	log.Info("hello from the other side", "hello", -1.2)
 
-			return someOperation(ctx)
-		}, trace.WithAttributes(attribute.Bool("hello", true))).Register()
+	assert.True(t, span.IsRecording())
+
+	op, err := someOperation(ctx)
+	log.Info("got operation result", "op-result", op)
+	return err
 }
 
 var errSomeOperation = errors.New("some operation failed")
 
-func someOperation(ctx context.Context) error {
-	_ = FromContextUnnamed(ctx).TraceFunc(ctx, "someOperationPre",
-		func(ctx context.Context, span trace.Span) error {
-			span.SetAttributes(attribute.Array("arr", []string{"foo", "bar"}))
+func someOperation(ctx context.Context) (_ int64, retErr error) {
+	// You can have multiple operations within the same span
+	_, span, _ := Tracer().Trace(ctx, "someOperationPre")
+	span.SetAttributes(attribute.Array("arr", []string{"foo", "bar"}))
+	span.End()
 
-			return nil
-		}).Register()
+	// The default logger is configured at level 0, and we bumped to
+	// level 1 in worker.doWork. The logger is configured above to log
+	// levels 1 and below. If we now try to bump to level 2, it'll be
+	// ignored.
+	_, span, _ = Tracer().AddLevel(1).Trace(ctx, "ignoreMe")
+	span.SetAttributes(attribute.Array("arr", []string{"foo", "bar"}))
+	span.End()
 
-	return FromContext(ctx, "errorOperator").TraceFunc(ctx, "",
-		func(ctx context.Context, span trace.Span) error {
+	// Show that errors can be captured although we're returning two
+	// variables and not using named returns.
+	_, span, _ = Tracer().
+		Capture(&retErr).
+		ErrRegisterFunc(func(err error, span trace.Span, log Logger) {
+			// just register an event
+			if errors.Is(err, errSomeOperation) {
+				span.AddEvent("SomeOperationError")
+				log.Info("manual entry about some operation error")
+			}
+		}).
+		WithActor("errorOperator").
+		Trace(ctx, "")
+	defer span.End()
 
-			span.SetName("newname")
-			span.SetStatus(codes.Ok, "description: status is ok")
+	span.SetName("newname")
+	span.SetStatus(codes.Ok, "description: status is ok")
 
-			return errSomeOperation
-		}).RegisterCustom(func(span trace.Span, err error) {
-		// just register an event
-		span.AddEvent("SomeOperationError")
-	})
-}
-
-func Test_tracerName(t *testing.T) {
-	tests := []struct {
-		obj  interface{}
-		want string
-	}{
-		{"foo", "foo"},
-		{trNamed{"bar"}, "bar"},
-		{nil, ""},
-		{bytes.NewBuffer(nil), "*bytes.Buffer"},
-		{os.Stdin, "os.Stdin"},
-		{os.Stdout, "os.Stdout"},
-		{os.Stderr, "os.Stderr"},
-		{io.Discard, "io.Discard"},
-	}
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			assert.Equal(t, tt.want, tracerName(tt.obj))
-		})
-	}
-}
-
-type trNamed struct{ name string }
-
-func (t trNamed) TracerName() string { return t.name }
-
-func Test_funcTracer_fmtSpanName(t *testing.T) {
-	tests := []struct {
-		tracerName string
-		fnName     string
-		want       string
-	}{
-		{tracerName: "Tracer", fnName: "Func", want: "Tracer.Func"},
-		{tracerName: "", fnName: "Func", want: "Func"},
-		{tracerName: "Tracer", fnName: "", want: "Tracer"},
-		{tracerName: "", fnName: "", want: "<unnamed_span>"},
-	}
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
-			assert.Equal(t, tt.want, fmtSpanName(tt.tracerName, tt.fnName))
-		})
-	}
+	return -1, fmt.Errorf("%w: unexpected thing happened", errSomeOperation)
 }

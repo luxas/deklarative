@@ -3,9 +3,7 @@ package tracing
 import (
 	"context"
 	"errors"
-	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -13,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	tracesdk "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 )
 
@@ -23,73 +20,29 @@ import (
 // ErrNoExportersProvided describes that no exporters where provided when building.
 var ErrNoExportersProvided = errors.New("no exporters provided")
 
-// SDKTracerProvider represents a TracerProvider that is generated from the OpenTelemetry
-// SDK and hence can be force-flushed and shutdown (which in both cases flushes all async,
-// batched traces before stopping).
-type SDKTracerProvider interface {
-	trace.TracerProvider
-	Shutdown(ctx context.Context) error
-	ForceFlush(ctx context.Context) error
-}
-
-// NewBuilder returns a new TracerProviderBuilder instance.
-func NewBuilder() TracerProviderBuilder {
+// Provider returns a new *TracerProviderBuilder instance.
+func Provider() *TracerProviderBuilder {
 	//nolint:exhaustivestruct
-	return &builder{}
+	return &TracerProviderBuilder{}
 }
 
-// TracerProviderBuilder is a builder for a TracerProviderWithShutdown.
-type TracerProviderBuilder interface {
-	// RegisterInsecureOTelExporter registers an exporter to an OpenTelemetry Collector on the
-	// given address, which defaults to "localhost:55680" if addr is empty. The OpenTelemetry
-	// Collector speaks gRPC, hence, don't add any "http(s)://" prefix to addr. The OpenTelemetry
-	// Collector is just a proxy, it in turn can forward for example traces to Jaeger and metrics to
-	// Prometheus. Additional options can be supplied that can override the default behavior.
-	RegisterInsecureOTelExporter(ctx context.Context, addr string, opts ...otlptracegrpc.Option) TracerProviderBuilder
-
-	// RegisterInsecureJaegerExporter registers an exporter to Jaeger using Jaeger's own HTTP API.
-	// The default address is "http://localhost:14268/api/traces" if addr is left empty.
-	// Additional options can be supplied that can override the default behavior.
-	RegisterInsecureJaegerExporter(addr string, opts ...jaeger.CollectorEndpointOption) TracerProviderBuilder
-
-	// RegisterStdoutExporter exports pretty-formatted telemetry data to os.Stdout, or another writer if
-	// stdouttrace.WithWriter(w) is supplied as an option. Note that stdouttrace.WithoutTimestamps() doesn't
-	// work due to an upstream bug in OpenTelemetry. TODO: Fix that issue upstream.
-	RegisterStdoutExporter(opts ...stdouttrace.Option) TracerProviderBuilder
-
-	// WithOptions allows configuring the TracerProvider in various ways, for example tracesdk.WithSpanProcessor(sp)
-	// or tracesdk.WithIDGenerator()
-	WithOptions(opts ...tracesdk.TracerProviderOption) TracerProviderBuilder
-
-	// WithAttributes allows registering more default attributes for traces created by this TracerProvider.
-	// By default semantic conventions of version v1.4.0 are used, with "service.name" => "libgitops".
-	WithAttributes(attrs ...attribute.KeyValue) TracerProviderBuilder
-
-	// WithSynchronousExports allows configuring whether the exporters should export in synchronous mode
-	// (which must be used ONLY for testing) or (by default) the batching mode.
-	WithSynchronousExports(sync bool) TracerProviderBuilder
-
-	// WithLogging conditionally makes span operations generate log entries.
-	WithLogging(log bool, opts ...LogOption) TracerProviderBuilder
-
-	// Build builds the SDKTracerProvider.
-	Build() (SDKTracerProvider, error)
-
-	// InstallGlobally builds the TracerProvider and registers it globally using otel.SetTracerProvider(tp).
-	InstallGlobally() error
-}
-
-type builder struct {
+// TracerProviderBuilder is an opinionated builder-pattern constructor for a
+// TracerProvider that can export spans to stdout, the Jaeger HTTP API or an
+// OpenTelemetry Collector gRPC proxy.
+type TracerProviderBuilder struct {
 	exporters []tracesdk.SpanExporter
 	errs      []error
 	tpOpts    []tracesdk.TracerProviderOption
 	attrs     []attribute.KeyValue
 	sync      bool
-	log       bool
-	logOpts   []LogOption
 }
 
-func (b *builder) RegisterInsecureOTelExporter(ctx context.Context, addr string, opts ...otlptracegrpc.Option) TracerProviderBuilder {
+// WithInsecureOTelExporter registers an exporter to an OpenTelemetry Collector on the
+// given address, which defaults to "localhost:55680" if addr is empty. The OpenTelemetry
+// Collector speaks gRPC, hence, don't add any "http(s)://" prefix to addr. The OpenTelemetry
+// Collector is just a proxy, it in turn can forward for example traces to Jaeger and metrics to
+// Prometheus. Additional options can be supplied that can override the default behavior.
+func (b *TracerProviderBuilder) WithInsecureOTelExporter(ctx context.Context, addr string, opts ...otlptracegrpc.Option) *TracerProviderBuilder {
 	if len(addr) == 0 {
 		addr = "localhost:55680"
 	}
@@ -107,7 +60,10 @@ func (b *builder) RegisterInsecureOTelExporter(ctx context.Context, addr string,
 	return b
 }
 
-func (b *builder) RegisterInsecureJaegerExporter(addr string, opts ...jaeger.CollectorEndpointOption) TracerProviderBuilder {
+// WithInsecureJaegerExporter registers an exporter to Jaeger using Jaeger's own HTTP API.
+// The default address is "http://localhost:14268/api/traces" if addr is left empty.
+// Additional options can be supplied that can override the default behavior.
+func (b *TracerProviderBuilder) WithInsecureJaegerExporter(addr string, opts ...jaeger.CollectorEndpointOption) *TracerProviderBuilder {
 	defaultOpts := []jaeger.CollectorEndpointOption{}
 	// Only override if addr is set. Default is "http://localhost:14268/api/traces"
 	if len(addr) != 0 {
@@ -122,7 +78,10 @@ func (b *builder) RegisterInsecureJaegerExporter(addr string, opts ...jaeger.Col
 	return b
 }
 
-func (b *builder) RegisterStdoutExporter(opts ...stdouttrace.Option) TracerProviderBuilder {
+// WithStdoutExporter exports pretty-formatted telemetry data to os.Stdout, or another writer if
+// stdouttrace.WithWriter(w) is supplied as an option. Note that stdouttrace.WithoutTimestamps() doesn't
+// work due to an upstream bug in OpenTelemetry. TODO: Fix that issue upstream.
+func (b *TracerProviderBuilder) WithStdoutExporter(opts ...stdouttrace.Option) *TracerProviderBuilder {
 	defaultOpts := []stdouttrace.Option{
 		stdouttrace.WithPrettyPrint(),
 	}
@@ -135,28 +94,29 @@ func (b *builder) RegisterStdoutExporter(opts ...stdouttrace.Option) TracerProvi
 	return b
 }
 
-func (b *builder) WithOptions(opts ...tracesdk.TracerProviderOption) TracerProviderBuilder {
+// WithOptions allows configuring the TracerProvider in various ways, for example tracesdk.WithSpanProcessor(sp)
+// or tracesdk.WithIDGenerator().
+func (b *TracerProviderBuilder) WithOptions(opts ...tracesdk.TracerProviderOption) *TracerProviderBuilder {
 	b.tpOpts = append(b.tpOpts, opts...)
 	return b
 }
 
-func (b *builder) WithAttributes(attrs ...attribute.KeyValue) TracerProviderBuilder {
+// WithAttributes allows registering more default attributes for traces created by this TracerProvider.
+// By default semantic conventions of version v1.4.0 are used, with "service.name" => "libgitops".
+func (b *TracerProviderBuilder) WithAttributes(attrs ...attribute.KeyValue) *TracerProviderBuilder {
 	b.attrs = append(b.attrs, attrs...)
 	return b
 }
 
-func (b *builder) WithSynchronousExports(sync bool) TracerProviderBuilder {
+// WithSynchronousExports allows configuring whether the exporters should export in synchronous mode
+// (which must be used ONLY for testing) or (by default) the batching mode.
+func (b *TracerProviderBuilder) WithSynchronousExports(sync bool) *TracerProviderBuilder {
 	b.sync = sync
 	return b
 }
 
-func (b *builder) WithLogging(log bool, opts ...LogOption) TracerProviderBuilder {
-	b.log = log
-	b.logOpts = append(b.logOpts, opts...)
-	return b
-}
-
-func (b *builder) Build() (SDKTracerProvider, error) {
+// Build builds the SDKTracerProvider.
+func (b *TracerProviderBuilder) Build() (SDKTracerProvider, error) {
 	// Combine and filter the errors from the exporter building
 	if err := multierr.Combine(b.errs...); err != nil {
 		return nil, err
@@ -185,76 +145,27 @@ func (b *builder) Build() (SDKTracerProvider, error) {
 		// The non-syncing mode shall only be used in testing. The batching mode must be used in production.
 		if b.sync {
 			defaultTpOpts = append(defaultTpOpts, tracesdk.WithSyncer(exporter))
-		} else {
-			defaultTpOpts = append(defaultTpOpts, tracesdk.WithBatcher(exporter))
+			continue
 		}
+
+		defaultTpOpts = append(defaultTpOpts, tracesdk.WithBatcher(exporter))
 	}
 
 	// Make sure to order the defaultTpOpts first, so b.tpOpts can override the default ones
 	//nolint:gocritic
 	opts := append(defaultTpOpts, b.tpOpts...)
 	// Build the tracing provider
-	tpsdk := tracesdk.NewTracerProvider(opts...)
-	if b.log {
-		return NewLoggingTracerProvider(tpsdk, b.logOpts...), nil
-	}
-	return tpsdk, nil
+	return tracesdk.NewTracerProvider(opts...), nil
 }
 
-func (b *builder) InstallGlobally() error {
+// InstallGlobally builds the TracerProvider and registers it globally using otel.SetTracerProvider(tp).
+func (b *TracerProviderBuilder) InstallGlobally() error {
 	// First, build the tracing provider...
 	tp, err := b.Build()
 	if err != nil {
 		return err
 	}
 	// ... and register it globally
-	otel.SetTracerProvider(tp)
+	SetGlobalTracerProvider(tp)
 	return nil
-}
-
-// Shutdown tries to convert the trace.TracerProvider to a SDKTracerProvider to
-// access its Shutdown method to make sure all traces have been flushed using the exporters
-// before it's shutdown. If timeout == 0, the shutdown will be done without a grace period.
-// If timeout > 0, the shutdown will have a grace period of that period of time to shutdown.
-func Shutdown(ctx context.Context, tp trace.TracerProvider, timeout time.Duration) error {
-	return callSDKProvider(ctx, tp, timeout, func(ctx context.Context, sp SDKTracerProvider) error {
-		return sp.Shutdown(ctx)
-	})
-}
-
-// ForceFlush tries to convert the trace.TracerProvider to a SDKTracerProvider to
-// access its ForceFlush method to make sure all traces have been flushed using the exporters.
-// If timeout == 0, the flushing will be done without a grace period.
-// If timeout > 0, the flushing will have a grace period of that period of time.
-// Unlike Shutdown, which also flushes the traces, the provider is still operation after this.
-func ForceFlush(ctx context.Context, tp trace.TracerProvider, timeout time.Duration) error {
-	return callSDKProvider(ctx, tp, timeout, func(ctx context.Context, sp SDKTracerProvider) error {
-		return sp.ForceFlush(ctx)
-	})
-}
-
-func callSDKProvider(ctx context.Context, tp trace.TracerProvider, timeout time.Duration, fn func(context.Context, SDKTracerProvider) error) error {
-	p, ok := tp.(SDKTracerProvider)
-	if !ok {
-		return nil
-	}
-
-	if timeout != 0 {
-		// Do not make the application hang when it is shutdown.
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-		defer cancel()
-	}
-
-	return fn(ctx, p)
-}
-
-// ShutdownGlobal shuts down the global TracerProvider using Shutdown().
-func ShutdownGlobal(ctx context.Context, timeout time.Duration) error {
-	return Shutdown(ctx, otel.GetTracerProvider(), timeout)
-}
-
-// ForceFlushGlobal flushes the global TracerProvider using ForceFlush().
-func ForceFlushGlobal(ctx context.Context, timeout time.Duration) error {
-	return ForceFlush(ctx, otel.GetTracerProvider(), timeout)
 }
