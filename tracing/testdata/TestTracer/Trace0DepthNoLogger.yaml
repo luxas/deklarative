@@ -1,0 +1,44 @@
+# worker.doWork
+- attributes:
+  - key: result
+    type: STRING
+    value: result
+  errors:
+  - error: 'some operation failed: unexpected thing happened'
+  names:
+  - worker.doWork
+  - foo
+  startConfig:
+    attributes:
+    - key: hello
+      type: BOOL
+      value: true
+  statusChanges:
+  - code: Ok
+
+# someOperationPre
+- attributes:
+  - key: arr
+    type: ARRAY
+    value:
+    - foo
+    - bar
+  names:
+  - someOperationPre
+  statusChanges:
+  - code: Error
+    description: this will be visible
+
+# errorOperator
+- events:
+  - name: SomeOperationError
+  names:
+  - errorOperator
+  - newname
+  statusChanges:
+  - code: Ok
+
+# afterShutdown
+- names:
+  - afterShutdown
+

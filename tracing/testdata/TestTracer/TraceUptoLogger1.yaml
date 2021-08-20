@@ -1,0 +1,78 @@
+# worker.doWork
+- attributes:
+  - key: result
+    type: STRING
+    value: result
+  - key: log-attr-hello
+    type: FLOAT64
+    value: -1.2
+  - key: log-attr-op-result
+    type: INT64
+    value: -1
+  children:
+  - attributes:
+    - key: arr
+      type: ARRAY
+      value:
+      - foo
+      - bar
+    names:
+    - someOperationPre
+    statusChanges:
+    - code: Error
+      description: this will be visible
+  - events:
+    - name: SomeOperationError
+    names:
+    - errorOperator
+    - newname
+    statusChanges:
+    - code: Ok
+  errors:
+  - error: 'some operation failed: unexpected thing happened'
+  names:
+  - worker.doWork
+  - foo
+  startConfig:
+    attributes:
+    - key: hello
+      type: BOOL
+      value: true
+  statusChanges:
+  - code: Ok
+
+# someOperationPre
+- attributes:
+  - key: arr
+    type: ARRAY
+    value:
+    - foo
+    - bar
+  children:
+  - attributes:
+    - key: arr
+      type: ARRAY
+      value:
+      - foo
+      - bar
+    names:
+    - ignoreMe
+  names:
+  - someOperationPre
+  statusChanges:
+  - code: Error
+    description: this will be visible
+
+# errorOperator
+- events:
+  - name: SomeOperationError
+  names:
+  - errorOperator
+  - newname
+  statusChanges:
+  - code: Ok
+
+# afterShutdown
+- names:
+  - afterShutdown
+

@@ -1,0 +1,438 @@
+[
+	{
+		"Name": "ignoreMe",
+		"SpanContext": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "547deaf776200434",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "b664880fc7581c77",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": [
+			{
+				"Key": "arr",
+				"Value": {
+					"Type": "ARRAY",
+					"Value": [
+						"foo",
+						"bar"
+					]
+				}
+			}
+		],
+		"Events": null,
+		"Links": null,
+		"Status": {
+			"Code": "Unset",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "go.opentelemetry.io/otel/sdk/tracer",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "someOperationPre",
+		"SpanContext": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "b664880fc7581c77",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "cdf7ed275ad5e028",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": [
+			{
+				"Key": "arr",
+				"Value": {
+					"Type": "ARRAY",
+					"Value": [
+						"foo",
+						"bar"
+					]
+				}
+			}
+		],
+		"Events": null,
+		"Links": null,
+		"Status": {
+			"Code": "Error",
+			"Description": "this will be visible"
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "go.opentelemetry.io/otel/sdk/tracer",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "newname",
+		"SpanContext": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "95b358675999c4b7",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "cdf7ed275ad5e028",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": null,
+		"Events": [
+			{
+				"Name": "SomeOperationError",
+				"Attributes": null,
+				"DroppedAttributeCount": 0,
+				"Time": "0001-01-01T00:00:00Z"
+			}
+		],
+		"Links": null,
+		"Status": {
+			"Code": "Ok",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "errorOperator",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "foo",
+		"SpanContext": {
+			"TraceID": "c00e5d67c2755389aded7d8b151cbd5b",
+			"SpanID": "cdf7ed275ad5e028",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "00000000000000000000000000000000",
+			"SpanID": "0000000000000000",
+			"TraceFlags": "00",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": [
+			{
+				"Key": "hello",
+				"Value": {
+					"Type": "BOOL",
+					"Value": true
+				}
+			},
+			{
+				"Key": "result",
+				"Value": {
+					"Type": "STRING",
+					"Value": "result"
+				}
+			},
+			{
+				"Key": "log-attr-hello",
+				"Value": {
+					"Type": "FLOAT64",
+					"Value": -1.2
+				}
+			},
+			{
+				"Key": "log-attr-op-result",
+				"Value": {
+					"Type": "INT64",
+					"Value": -1
+				}
+			}
+		],
+		"Events": [
+			{
+				"Name": "exception",
+				"Attributes": [
+					{
+						"Key": "exception.type",
+						"Value": {
+							"Type": "STRING",
+							"Value": "*fmt.wrapError"
+						}
+					},
+					{
+						"Key": "exception.message",
+						"Value": {
+							"Type": "STRING",
+							"Value": "some operation failed: unexpected thing happened"
+						}
+					}
+				],
+				"DroppedAttributeCount": 0,
+				"Time": "0001-01-01T00:00:00Z"
+			}
+		],
+		"Links": null,
+		"Status": {
+			"Code": "Ok",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "worker",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "ignoreMe",
+		"SpanContext": {
+			"TraceID": "338ff339566349ed0ef6384876655d1b",
+			"SpanID": "8ab69b9af5cd042a",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "338ff339566349ed0ef6384876655d1b",
+			"SpanID": "9b955e36ac165c6b",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": [
+			{
+				"Key": "arr",
+				"Value": {
+					"Type": "ARRAY",
+					"Value": [
+						"foo",
+						"bar"
+					]
+				}
+			}
+		],
+		"Events": null,
+		"Links": null,
+		"Status": {
+			"Code": "Unset",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "go.opentelemetry.io/otel/sdk/tracer",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "someOperationPre",
+		"SpanContext": {
+			"TraceID": "338ff339566349ed0ef6384876655d1b",
+			"SpanID": "9b955e36ac165c6b",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "00000000000000000000000000000000",
+			"SpanID": "0000000000000000",
+			"TraceFlags": "00",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": [
+			{
+				"Key": "arr",
+				"Value": {
+					"Type": "ARRAY",
+					"Value": [
+						"foo",
+						"bar"
+					]
+				}
+			}
+		],
+		"Events": null,
+		"Links": null,
+		"Status": {
+			"Code": "Error",
+			"Description": "this will be visible"
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "go.opentelemetry.io/otel/sdk/tracer",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]
+[
+	{
+		"Name": "newname",
+		"SpanContext": {
+			"TraceID": "37c5fddb85129a80cc2138b6e22ef940",
+			"SpanID": "943921a942170b6f",
+			"TraceFlags": "01",
+			"TraceState": "",
+			"Remote": false
+		},
+		"Parent": {
+			"TraceID": "00000000000000000000000000000000",
+			"SpanID": "0000000000000000",
+			"TraceFlags": "00",
+			"TraceState": "",
+			"Remote": false
+		},
+		"SpanKind": 1,
+		"StartTime": "0001-01-01T00:00:00Z",
+		"EndTime": "0001-01-01T00:00:00Z",
+		"Attributes": null,
+		"Events": [
+			{
+				"Name": "SomeOperationError",
+				"Attributes": null,
+				"DroppedAttributeCount": 0,
+				"Time": "0001-01-01T00:00:00Z"
+			}
+		],
+		"Links": null,
+		"Status": {
+			"Code": "Ok",
+			"Description": ""
+		},
+		"DroppedAttributes": 0,
+		"DroppedEvents": 0,
+		"DroppedLinks": 0,
+		"ChildSpanCount": 0,
+		"Resource": [
+			{
+				"Key": "service.name",
+				"Value": {
+					"Type": "STRING",
+					"Value": "libgitops"
+				}
+			}
+		],
+		"InstrumentationLibrary": {
+			"Name": "errorOperator",
+			"Version": "",
+			"SchemaURL": ""
+		}
+	}
+]

@@ -1,0 +1,38 @@
+INFO(v=0)	executing TestTracer
+INFO(v=0)	worker.doWork	starting span	{"span-attr-hello": true}
+INFO(v=0)	worker.doWork	span attribute change	{"span-attr-result": "result"}
+INFO(v=0)	worker.doWork	span name change	{"span-name": "foo"}
+INFO(v=0)	worker.doWork	span status change	{"span-status-code": "Ok"}
+INFO(v=0)	worker.doWork	hello from the other side	{"hello": -1.2}
+DEBUG(v=1)	someOperationPre	starting span
+DEBUG(v=1)	someOperationPre	span attribute change	{"span-attr-arr": ["foo","bar"]}
+DEBUG(v=1)	someOperationPre	span status change	{"span-status-code": "Error", "span-status-description": "this will be visible"}
+DEBUG(v=1)	someOperationPre	ending span
+DEBUG(v=1)	errorOperator	starting span
+DEBUG(v=1)	errorOperator	span name change	{"span-name": "newname"}
+DEBUG(v=1)	errorOperator	span status change	{"span-status-code": "Ok"}
+DEBUG(v=1)	errorOperator	span event	{"span-event": "SomeOperationError"}
+DEBUG(v=1)	errorOperator	manual entry about some operation error
+DEBUG(v=1)	errorOperator	ending span
+INFO(v=0)	worker.doWork	got operation result	{"op-result": -1}
+ERROR	worker.doWork	span error	{"error": "some operation failed: unexpected thing happened"}
+github.com/luxas/deklarative-api-runtime/tracing.doWork
+github.com/luxas/deklarative-api-runtime/tracing.testCore
+github.com/luxas/deklarative-api-runtime/tracing.TestTracer.func9
+testing.tRunner
+INFO(v=0)	worker.doWork	ending span
+INFO(v=0)	someOperationPre	starting span
+INFO(v=0)	someOperationPre	span attribute change	{"span-attr-arr": ["foo","bar"]}
+INFO(v=0)	someOperationPre	span status change	{"span-status-code": "Error", "span-status-description": "this will be visible"}
+DEBUG(v=1)	ignoreMe	starting span
+DEBUG(v=1)	ignoreMe	span attribute change	{"span-attr-arr": ["foo","bar"]}
+DEBUG(v=1)	ignoreMe	ending span
+INFO(v=0)	someOperationPre	ending span
+INFO(v=0)	errorOperator	starting span
+INFO(v=0)	errorOperator	span name change	{"span-name": "newname"}
+INFO(v=0)	errorOperator	span status change	{"span-status-code": "Ok"}
+INFO(v=0)	errorOperator	span event	{"span-event": "SomeOperationError"}
+INFO(v=0)	errorOperator	manual entry about some operation error
+INFO(v=0)	errorOperator	ending span
+INFO(v=0)	afterShutdown	starting span
+INFO(v=0)	afterShutdown	ending span
