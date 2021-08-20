@@ -20,7 +20,7 @@ var (
 // GetGlobalTracerProvider returns the global TracerProvider registered.
 // The default TracerProvider is trace.NewNoopTracerProvider().
 // This is a shorthand for otel.GetTracerProvider().
-func GetGlobalTracerProvider() TracerProvider { return otel.GetTracerProvider() }
+func GetGlobalTracerProvider() TracerProvider { return fromUpstream(otel.GetTracerProvider()) }
 
 // SetGlobalTracerProvider sets globally-registered TracerProvider to tp.
 // This is a shorthand for otel.SetTracerProvider(tp).

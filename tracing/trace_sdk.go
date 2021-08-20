@@ -2,95 +2,72 @@ package tracing
 
 import (
 	"context"
-	"time"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
-// SDKTracerProvider represents a TracerProvider that is generated from the OpenTelemetry
-// SDK and hence can be force-flushed and shutdown (which in both cases flushes all async,
-// batched traces before stopping).
-type SDKTracerProvider interface {
-	TracerProvider
-	Shutdown(ctx context.Context) error
-	ForceFlush(ctx context.Context) error
+func fromUpstream(upstream trace.TracerProvider) TracerProvider {
+	return composite(upstream, nil)
 }
 
-// SDKOperationOption represents an option for a SDK TracerProvider option.
-type SDKOperationOption interface {
-	applyToSDKOperation(target *sdkOperationOptions)
-}
-
-// WithTimeout returns a SDKOperationOption that gives a SDK operation a
-// grace period (default timeout is 0).
-//
-// If timeout == 0, the operation will be done without a grace period.
-// If timeout > 0, the operation will have a grace period of that period of time.
-func WithTimeout(timeout time.Duration) SDKOperationOption {
-	return sdkOperationOptionFunc(func(target *sdkOperationOptions) {
-		target.timeout = timeout
-	})
-}
-
-// Shutdown tries to convert the TracerProvider to a SDKTracerProvider to
-// access its Shutdown method to make sure all traces have been flushed using the exporters
-// before it's shutdown.
-//
-// Unless WithTracerProvider is specified, the global tracer provider is affected.
-// WithTimeout can be used to give a grace period.
-func Shutdown(ctx context.Context, opts ...SDKOperationOption) error {
-	return callSDKProvider(ctx, opts, func(ctx context.Context, sp SDKTracerProvider) error {
-		return sp.Shutdown(ctx)
-	})
-}
-
-// ForceFlush tries to convert the TracerProvider to a SDKTracerProvider to
-// access its ForceFlush method to make sure all traces have been flushed using the exporters.
-//
-// Unless WithTracerProvider is specified, the global tracer provider is affected.
-// WithTimeout can be used to give a grace period.
-//
-// Unlike Shutdown, which also flushes the traces, the provider is still operation after this.
-func ForceFlush(ctx context.Context, opts ...SDKOperationOption) error {
-	return callSDKProvider(ctx, opts, func(ctx context.Context, sp SDKTracerProvider) error {
-		return sp.ForceFlush(ctx)
-	})
-}
-
-func callSDKProvider(ctx context.Context, opts []SDKOperationOption, fn func(context.Context, SDKTracerProvider) error) error {
-	o := (&sdkOperationOptions{
-		tp: GetGlobalTracerProvider(),
-	}).applyOptions(opts)
-
-	p, ok := o.tp.(SDKTracerProvider)
-	if !ok {
-		return nil
+func composite(upstream trace.TracerProvider, underlying TracerProvider) TracerProvider {
+	if tp, ok := upstream.(TracerProvider); ok {
+		return tp
 	}
+	return &upstreamConverter{upstream, underlying}
+}
 
-	if o.timeout != 0 {
-		// Do not make the application hang when it is shutdown.
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, o.timeout)
-		defer cancel()
+var _ TracerProvider = &upstreamConverter{}
+
+type upstreamConverter struct {
+	trace.TracerProvider
+	underlying TracerProvider
+}
+
+func (c *upstreamConverter) Shutdown(ctx context.Context) error {
+	if shutdownable, ok := c.TracerProvider.(interface {
+		Shutdown(ctx context.Context) error
+	}); ok {
+		return shutdownable.Shutdown(ctx)
 	}
-
-	return fn(ctx, p)
-}
-
-type sdkOperationOptions struct {
-	timeout time.Duration
-	tp      TracerProvider
-}
-
-func (o *sdkOperationOptions) applyOptions(opts []SDKOperationOption) *sdkOperationOptions {
-	for _, opt := range opts {
-		opt.applyToSDKOperation(o)
+	if c.underlying != nil {
+		return c.underlying.Shutdown(ctx)
 	}
-	return o
+	return nil
 }
 
-// sdkOperationOptionFunc implements the SDKOperationOption
-// by mutating sdkOperationOptions.
-type sdkOperationOptionFunc func(target *sdkOperationOptions)
+func (c *upstreamConverter) ForceFlush(ctx context.Context) error {
+	if flushable, ok := c.TracerProvider.(interface {
+		ForceFlush(ctx context.Context) error
+	}); ok {
+		return flushable.ForceFlush(ctx)
+	}
+	if c.underlying != nil {
+		return c.underlying.ForceFlush(ctx)
+	}
+	return nil
+}
 
-func (f sdkOperationOptionFunc) applyToSDKOperation(target *sdkOperationOptions) {
-	f(target)
+func (c *upstreamConverter) Enabled(ctx context.Context, cfg *TracerConfig) bool {
+	if enabler, ok := c.TracerProvider.(interface {
+		Enabled(ctx context.Context, cfg *TracerConfig) bool
+	}); ok {
+		return enabler.Enabled(ctx, cfg)
+	}
+	if c.underlying != nil {
+		return c.underlying.Enabled(ctx, cfg)
+	}
+	return true
+}
+
+func (c *upstreamConverter) IsNoop() bool {
+	if noopable, ok := c.TracerProvider.(interface {
+		IsNoop() bool
+	}); ok {
+		return noopable.IsNoop()
+	}
+	if c.underlying != nil {
+		return c.underlying.IsNoop()
+	}
+	return c.TracerProvider == noopProvider
 }

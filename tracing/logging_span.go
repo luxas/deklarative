@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -9,10 +10,14 @@ import (
 // loggingSpan is a span that's logging changes to it using the
 // given Logger. It is a composite Span implementation.
 type loggingSpan struct {
-	log   Logger
-	span  Span
-	err   *error
-	errFn ErrRegisterFunc
+	// embedding is important; this automatically exposes all inherited functionality from the
+	// underlying resource.
+	Span
+
+	provider TracerProvider
+	log      Logger
+	err      *error
+	errFn    ErrRegisterFunc
 }
 
 const (
@@ -28,49 +33,56 @@ const (
 	LogAttributePrefix = "log-attr-"
 )
 
-func (s *loggingSpan) IsRecording() bool                    { return s.span.IsRecording() }
-func (s *loggingSpan) SpanContext() trace.SpanContext       { return s.span.SpanContext() }
-func (s *loggingSpan) TracerProvider() trace.TracerProvider { return s.span.TracerProvider() }
+func (s *loggingSpan) TracerProvider() trace.TracerProvider { return s.provider }
 
 func (s *loggingSpan) End(options ...trace.SpanEndOption) {
 	// Register the error, if any
+	log := logr.WithCallDepth(s.log, 1)
 	if s.err != nil {
-		errFn := s.errFn
-		if errFn == nil {
-			errFn = DefaultErrRegisterFunc
-		}
-		errFn(*s.err, s, s.log)
+		s2 := *s
+		s2.log = logr.WithCallDepth(log, 1)
+		s.errFn(*s.err, &s2, log)
 	}
 
-	s.log.Info("ending span")
-	s.span.End(options...)
+	log.Info("ending span")
+	s.Span.End(options...)
 }
 
 func (s *loggingSpan) AddEvent(name string, options ...trace.EventOption) {
-	s.log.Info("span event", spanEventKey, name)
-	s.span.AddEvent(name, options...)
+	log := logr.WithCallDepth(s.log, 1)
+	log.Info("span event", spanEventKey, name)
+	s.Span.AddEvent(name, options...)
 }
 
 func (s *loggingSpan) RecordError(err error, options ...trace.EventOption) {
-	s.log.Error(err, "span error")
-	s.span.RecordError(err, options...)
+	log := logr.WithCallDepth(s.log, 1)
+	log.Error(err, "span error")
+	s.Span.RecordError(err, options...)
 }
 
 func (s *loggingSpan) SetStatus(code codes.Code, description string) {
-	s.log.Info("span status change",
-		spanStatusCodeKey, code.String(),
-		spanStatusDescriptionKey, description)
-	s.span.SetStatus(code, description)
+	log := logr.WithCallDepth(s.log, 1)
+	// The description is only included when there's an error, as per the
+	// spec of Span.SetStatus.
+	args := []interface{}{spanStatusCodeKey, code.String()}
+	if code == codes.Error {
+		args = append(args, spanStatusDescriptionKey, description)
+	}
+	log.Info("span status change", args...)
+
+	s.Span.SetStatus(code, description)
 }
 
 func (s *loggingSpan) SetName(name string) {
-	s.log.Info("span name change", spanNameKey, name)
-	s.span.SetName(name)
+	log := logr.WithCallDepth(s.log, 1)
+	log.Info("span name change", spanNameKey, name)
+	s.Span.SetName(name)
 }
 
 func (s *loggingSpan) SetAttributes(kv ...attribute.KeyValue) {
-	s.log.Info("span attribute change", kvListToLogAttrs(kv)...)
-	s.span.SetAttributes(kv...)
+	log := logr.WithCallDepth(s.log, 1)
+	log.Info("span attribute change", kvListToLogAttrs(kv)...)
+	s.Span.SetAttributes(kv...)
 }
 
 func kvListToLogAttrs(kv []attribute.KeyValue) []interface{} {

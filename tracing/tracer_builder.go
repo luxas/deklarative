@@ -33,19 +33,15 @@ import (
 //nolint:gochecknoglobals
 var (
 	noopProvider = trace.NewNoopTracerProvider()
-	noopTracer   = noopProvider.Tracer("")
 )
 
 // TracerBuilder implements trace.Tracer.
 type TracerBuilder struct {
 	actor interface{}
-	log   Logger
-	tp    TracerProvider
 	err   *error
 	errFn ErrRegisterFunc // default: DefaultErrRegisterFunc
 
 	spanStartOpts []trace.SpanStartOption
-	addLevel      int
 }
 
 var _ trace.Tracer = &TracerBuilder{}
@@ -75,42 +71,13 @@ func (b *TracerBuilder) WithActor(actor interface{}) *TracerBuilder {
 	return b
 }
 
-// WithLogger specifies a Logger to use in the trace process.
-//
-// A call to this function overwrites any previous value.
-func (b *TracerBuilder) WithLogger(log Logger) *TracerBuilder {
-	b.log = log
-	return b
-}
-
-// WithTracerProvider specifies a TracerProvider to use in the trace process.
-//
-// A call to this function overwrites any previous value.
-func (b *TracerBuilder) WithTracerProvider(tp TracerProvider) *TracerBuilder {
-	b.tp = tp
-	return b
-}
-
 // WithAttributes registers attributes that are added as
 // trace.SpanStartOptions automatically, but also logged in
 // the beginning using the logger, if enabled.
 //
 // A call to this function appends to the list of previous values.
 func (b *TracerBuilder) WithAttributes(attrs ...attribute.KeyValue) *TracerBuilder {
-	return b.withSpanStartOptions(trace.WithAttributes(attrs...))
-}
-
-// AddLevel adds this level to the Logger got from the
-// context, and propagates the verbosity increase downstream.
-//
-// Using this feature, it's possible to enable tracing up until a
-// specific span depth. If the cumulative log level is higher than
-// the Logger's level, Enabled() will return false, and hence logging
-// and tracing is disabled.
-//
-// A call to this function overwrites any previous value.
-func (b *TracerBuilder) AddLevel(level int) *TracerBuilder {
-	b.addLevel = level
+	b.spanStartOpts = append(b.spanStartOpts, trace.WithAttributes(attrs...))
 	return b
 }
 
@@ -144,11 +111,6 @@ func (b *TracerBuilder) ErrRegisterFunc(fn ErrRegisterFunc) *TracerBuilder {
 	return b
 }
 
-func (b *TracerBuilder) withSpanStartOptions(opts ...trace.SpanStartOption) *TracerBuilder {
-	b.spanStartOpts = append(b.spanStartOpts, opts...)
-	return b
-}
-
 // Start implements trace.Tracer. See Trace for more information about how
 // this trace.Tracer works. The only difference between this function and
 // Trace is the signature; Trace also returns a Logger.
@@ -162,9 +124,6 @@ func (b *TracerBuilder) Start(ctx context.Context, fnName string, opts ...trace.
 // in WithActor) and fnName.
 //
 // If WithLogger isn't specified, the logger is retrieved using LoggerFromContext.
-//
-// If AddLevel is specified, the log level is increased accordingly for this Logger
-// and all child span Loggers.
 //
 // If the Logger is logr.Discard(), no logs are output. However, if a Logger is specified,
 // no tracing or logging will take place if it is disabled (in other words, if this span
@@ -183,79 +142,75 @@ func (b *TracerBuilder) Start(ctx context.Context, fnName string, opts ...trace.
 // If Capture and possibly ErrRegisterFunc are set, the error return value will be
 // automatically registered to the Span.
 func (b *TracerBuilder) Trace(ctx context.Context, fnName string, opts ...trace.SpanStartOption) (context.Context, Span, Logger) {
-	// Acquire the logger from the context; bump logging level if set
-	log := b.log
-	if log == nil {
-		log = LoggerFromContext(ctx)
-	}
-	if b.addLevel != 0 {
-		log = log.V(b.addLevel)
-	}
-	// Register the logger with the new level with the context
-	// It's important to do this at this stage such that any child
-	// users of this context will also be using the same logging level
-	ctx = logr.NewContext(ctx, log)
-	// If this log level is not enabled, but a logger was specified,
-	// don't enable tracing either
-	if !isDiscard(log) && !log.Enabled() {
-		// Return a trace.noopSpan{}
-		ctx, noopSpan := noopTracer.Start(ctx, "")
-		// Important to unit-test: Make sure that log is returned here, such that
-		// downstream consumers won't get isDiscard == true and get the false impression
-		// that logs shall be
-		return ctx, noopSpan, log
-	}
-
-	// Resolve the name of the tracer and the full span
-	tpName := tracerName(b.actor)
-	spanName := fmtSpanName(tpName, fnName)
-
-	// Assign a name here before using the logger,
-	// but don't propagate the name downwards.
-	log = log.WithName(spanName)
-
 	// Prepend the options from the builder, such that the options
 	// specified in the params have higher priority.
 	opts = append(b.spanStartOpts, opts...)
+	sc := trace.NewSpanStartConfig(opts...)
+
+	cfg := TracerConfig{
+		SpanConfig:   sc,
+		TracerConfig: trace.NewTracerConfig(), // TODO
+
+		TracerName: tracerName(b.actor), // TODO: Unify funcName, actorName, spanName and tracerName
+		FuncName:   fnName,
+
+		Provider:          TracerProviderFromContext(ctx),
+		Depth:             getDepth(ctx, sc.NewRoot()),
+		Logger:            LoggerFromContext(ctx),
+		LogLevelIncreaser: getLogLevelIncreaser(ctx),
+	}
+
+	addLevel := cfg.LogLevelIncreaser.GetVIncrease(ctx, &cfg)
+	if addLevel != 0 {
+		cfg.Logger = cfg.Logger.V(addLevel)
+		// Register the logger with the new level with the context
+		// It's important to do this at this stage such that any child
+		// users of this context will also be using the same logging level
+		ctx = logr.NewContext(ctx, cfg.Logger)
+	}
+
+	// Register the depth
+	ctx = withDepth(ctx, cfg.Depth)
+
+	if !cfg.Provider.Enabled(ctx, &cfg) {
+		cfg.Provider = NoopTracerProvider()
+	}
+
+	// Assign a name here before using the logger,
+	// but don't propagate the name downwards.
+	log := cfg.Logger.WithName(cfg.SpanName())
 
 	// Send a "span start" log entry, together with the attributes in the beginning
 	// These attributes won't be shown for every log entry in this
-	spanCfg := trace.NewSpanStartConfig(opts...)
 	startLog := log
-	if attrs := spanCfg.Attributes(); len(attrs) != 0 {
+	if attrs := cfg.SpanConfig.Attributes(); len(attrs) != 0 {
 		startLog = startLog.WithValues(kvListToLogAttrs(attrs)...)
 	}
 	startLog.Info("starting span")
 
 	// Acquire the TracerProvider; and construct a Tracer from there
-	tp := b.tp
-	if tp == nil {
-		tp = TracerProviderFromContext(ctx)
-	}
-	tracer := tp.Tracer(tpName) // TODO: Allow registering trace.TracerOptions?
+	tracer := cfg.Provider.Tracer(cfg.TracerName) // TODO: Allow registering trace.TracerOptions?
 
 	// Call the composite tracer, but swap out the returned span for ours, both in the
 	// return value and context.
-	ctx, span := tracer.Start(ctx, spanName, opts...)
+	ctx, span := tracer.Start(ctx, cfg.SpanName(), opts...)
 
 	// Construct a composite Logger that also registers information
 	// to the Span.
 	spanLog := &spanLogger{
-		log:  log,
-		span: span,
+		Logger: log,
+		span:   span,
 	}
 	// Construct a composite Span that also logs using the Logger.
 	logSpan := &loggingSpan{
-		log:   log,
-		span:  span,
-		err:   b.err,
-		errFn: b.errFn,
+		Span:     span,
+		provider: cfg.Provider,
+		log:      log,
+		err:      b.err,
+		errFn:    b.errFn,
 	}
 	// The Span needs to be re-registered with the ctx to propagate
 	// downwards. The Logger is already re-registered with the Span
 	// after a potential log level increase above.
 	return trace.ContextWithSpan(ctx, logSpan), logSpan, spanLog
 }
-
-func isDiscard(log Logger) bool     { return log == logr.Discard() }
-func isNoop(tp TracerProvider) bool { return tp == noopProvider }

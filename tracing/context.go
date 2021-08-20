@@ -16,21 +16,21 @@ func SpanFromContext(ctx context.Context) Span { return trace.SpanFromContext(ct
 // TracerProvider returned by trace.NewNoopTracerProvider(), it is
 // used, or otherwise the global from GetGlobalTracerProvider().
 func TracerProviderFromContext(ctx context.Context) TracerProvider {
-	if spanTp := SpanFromContext(ctx).TracerProvider(); !isNoop(spanTp) {
+	if spanTp := fromUpstream(SpanFromContext(ctx).TracerProvider()); !spanTp.IsNoop() {
 		return spanTp
 	}
 	return GetGlobalTracerProvider()
 }
 
-// ContextWithLogger injects the given Logger into a new context
+// contextWithLogger injects the given Logger into a new context
 // descending from parent.
-func ContextWithLogger(parent context.Context, log Logger) context.Context {
+func contextWithLogger(parent context.Context, log Logger) context.Context {
 	return logr.NewContext(parent, log)
 }
 
-// ContextWithTracerProvider injects the given TracerProvider into a new context
+// contextWithTracerProvider injects the given TracerProvider into a new context
 // descending from parent.
-func ContextWithTracerProvider(parent context.Context, tp TracerProvider) context.Context {
+func contextWithTracerProvider(parent context.Context, tp TracerProvider) context.Context {
 	return trace.ContextWithSpan(parent, &tracerProviderSpan{
 		Span: SpanFromContext(parent),
 		tp:   tp,
@@ -45,75 +45,59 @@ type tracerProviderSpan struct {
 	tp TracerProvider
 }
 
-func (s *tracerProviderSpan) TracerProvider() TracerProvider { return s.tp }
+func (s *tracerProviderSpan) TracerProvider() trace.TracerProvider { return s.tp }
 
-// Context returns context.Background(), optionally with a specific Logger and
-// TracerProvider registered using the WithLogger and WithTracerProvider methods.
-//
-// This is useful at the very root of your application, or in tests, where you
-// need a starting point, a "root" context that can be passed into instrumentable
-// functions, using a specific Logger or TracerProvider.
-func Context(opts ...ContextOption) context.Context {
-	ctx := context.Background()
-	o := (&contextOptions{}).applyOptions(opts)
+// Context returns a new *ContextBuilder.
+func Context() *ContextBuilder { return &ContextBuilder{} }
 
-	if o.log != nil {
-		ctx = ContextWithLogger(ctx, o.log)
+// ContextBuilder is a builder-pattern constructor for a context.Context,
+// that possibly includes a TracerProvider, Logger and/or LogLevelIncreaser.
+type ContextBuilder struct {
+	from context.Context
+	tp   TracerProvider
+	log  Logger
+	lli  LogLevelIncreaser
+}
+
+// From sets the "base context" to start applying context.WithValue operations
+// to. By default this is context.Background().
+func (b *ContextBuilder) From(ctx context.Context) *ContextBuilder {
+	b.from = ctx
+	return b
+}
+
+// WithTracerProvider registers a TracerProvider with the context.
+func (b *ContextBuilder) WithTracerProvider(tp TracerProvider) *ContextBuilder {
+	b.tp = tp
+	return b
+}
+
+// WithLogger registers a Logger with the context.
+func (b *ContextBuilder) WithLogger(log Logger) *ContextBuilder {
+	b.log = log
+	return b
+}
+
+// WithLogLevelIncreaser registers a LogLevelIncreaser with the context.
+func (b *ContextBuilder) WithLogLevelIncreaser(lli LogLevelIncreaser) *ContextBuilder {
+	b.lli = lli
+	return b
+}
+
+// Build builds the context.
+func (b *ContextBuilder) Build() context.Context {
+	ctx := b.from
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	if o.tp != nil {
-		ctx = ContextWithTracerProvider(ctx, o.tp)
+	if b.tp != nil {
+		ctx = contextWithTracerProvider(ctx, b.tp)
+	}
+	if b.log != nil {
+		ctx = contextWithLogger(ctx, b.log)
+	}
+	if b.lli != nil {
+		ctx = withLogLevelIncreaser(ctx, b.lli)
 	}
 	return ctx
 }
-
-// ContextOption represents an option to the Context() method.
-type ContextOption interface {
-	applyToContext(target *contextOptions)
-}
-
-// WithLogger registers the given Logger with Context() return value.
-func WithLogger(log Logger) ContextOption {
-	return contextOptionFunc(func(target *contextOptions) {
-		target.log = log
-	})
-}
-
-// WithTracerProvider registers the given TracerProvider with Context() return value.
-func WithTracerProvider(tp TracerProvider) WithTracerProviderOption {
-	return &withTracerProvider{tp}
-}
-
-// WithTracerProviderOption is a union of the ContextOption and
-// SDKOperationOption interfaces, as WithTracerProvider applies to both.
-type WithTracerProviderOption interface {
-	ContextOption
-	SDKOperationOption
-}
-
-type withTracerProvider struct{ tp TracerProvider }
-
-func (w *withTracerProvider) applyToContext(target *contextOptions) {
-	target.tp = w.tp
-}
-
-func (w withTracerProvider) applyToSDKOperation(target *sdkOperationOptions) {
-	target.tp = w.tp
-}
-
-// contextOptions collects all options fields available for Context().
-type contextOptions struct {
-	log Logger
-	tp  TracerProvider
-}
-
-func (o *contextOptions) applyOptions(opts []ContextOption) *contextOptions {
-	for _, opt := range opts {
-		opt.applyToContext(o)
-	}
-	return o
-}
-
-// contextOptionFunc implements the ContextOption by mutating contextOptions.
-type contextOptionFunc func(target *contextOptions)
-
-func (f contextOptionFunc) applyToContext(target *contextOptions) { f(target) }
