@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -15,7 +16,7 @@ import (
 
 func ExampleBuilder_json() {
 	// Build an example logger called bar that logs levels <= 1.
-	log := NewZap().Example().AtLevel(1).Build().WithName("bar")
+	log := NewZap().Example().LogUpto(1).Build().WithName("bar")
 
 	// Sample info usage
 	log.Info("some message", "foo", true)
@@ -38,7 +39,7 @@ func ExampleBuilder_json() {
 
 func ExampleBuilder_console() {
 	// Build an example logger called bar that logs levels <= 1.
-	log := NewZap().Example().Console().AtLevel(1).Build().WithName("bar")
+	log := NewZap().Example().Console().LogUpto(1).Build().WithName("bar")
 
 	// Sample info usage
 	log.Info("some message", "foo", true)
@@ -64,7 +65,7 @@ func ExampleBuilder_custom() {
 	var buf bytes.Buffer
 	log := NewZap().
 		Example().
-		AtLevel(1).
+		LogUpto(1).
 		WithEncoderConfig(DevelopmentEncoderConfig()).
 		LogTo(&buf).
 		Build().
@@ -97,7 +98,7 @@ func ExampleBuilder_calldepth() {
 		NoTimestamps().
 		LogTo(&buf).
 		Console().
-		AtLevel(1).
+		LogUpto(1).
 		Build().
 		WithName("bar")
 
@@ -138,6 +139,35 @@ func ExampleBuilder_calldepth() {
 	// main.main
 	// runtime.main
 	// DEBUG(v=1)	bar	am I enabled?	{"enabled": true}
+}
+
+func TestTestdata(t *testing.T) {
+	g := filetest.New(t)
+	defer g.Assert()
+
+	// Build an example logger called bar that logs levels <= 1.
+	log := NewZap().
+		NoTimestamps().
+		Test(g).
+		Console().
+		LogUpto(1).
+		Build().
+		WithName("bar")
+
+	// Sample info usage
+	log.Info("some message", "foo", true)
+
+	// This is literally meant to cause a DPANIC; one must not give zap
+	// fields to a logr.Logger. Provoke a call stack here in the output.
+	log.WithValues("bar", 1).V(1).Info("hello", zap.Float32("foo", 23.2))
+
+	// Sample error usage. See the call stack in action.
+	err := errors.New("unexpected error") //nolint:goerr113
+	log.Error(err, "I don't know what happened here", "duration", time.Minute)
+
+	// Verify that v=2 is disabled (i.e. discarded), but v=1 is enabled
+	log.V(1).Info("am I enabled?", "enabled", log.V(1).Enabled())
+	log.V(2).Info("am I enabled?", "enabled", log.V(2).Enabled())
 }
 
 func TestLevelEncoders(t *testing.T) {

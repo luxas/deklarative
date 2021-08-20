@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
+	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -143,7 +144,7 @@ func (b *Builder) WithEncoderCreator(encoderCreator EncoderCreator) *Builder {
 	return b
 }
 
-// AtLevel specifies the logr level that shall be used. All log messages from
+// LogUpto specifies the logr level that shall be used. All log messages from
 // a logr.Logger with a log level _less than or equal to_ logrLevel will be output.
 //
 // To convert between zap and logr log levels, multiply by -1 like follows:
@@ -162,7 +163,7 @@ func (b *Builder) WithEncoderCreator(encoderCreator EncoderCreator) *Builder {
 // level less than zero.", hence, negative logrLevel values are disallowed.
 //
 // A call to this function overwrites any previous value.
-func (b *Builder) AtLevel(logrLevel int8) *Builder {
+func (b *Builder) LogUpto(logrLevel int8) *Builder {
 	if b.level >= 0 {
 		b.level = zapcore.Level(-1 * logrLevel)
 	}
@@ -208,6 +209,16 @@ func (b *Builder) Example() *Builder {
 	return b.HumanFriendlyTime().
 		NoTimestamps().
 		NoStacktraceOnError()
+}
+
+// Test is a shorthand for verifying log output in a test with the help of the
+// filetest package. Given a filetest.Tester, this will make the logger log to
+// a file under testdata/ with the name of the test + the ".log" suffix.
+//
+// FilterStacktraceOrigins is applied before verifying the output such that
+// in console mode the stack trace is filtered.
+func (b *Builder) Test(g *filetest.Tester) *Builder {
+	return b.LogTo(g.Add(g.T.Name() + ".log").Filter(FilterStacktraceOrigins).Writer())
 }
 
 // NoStacktraceOnError makes the logger not output a stack trace when
@@ -265,7 +276,7 @@ func (b *Builder) HumanFriendlyTime() *Builder {
 // Build builds the logger with the configured options.
 //
 // By default the logger name is an empty string, and the log level is 0.
-func (b *Builder) Build() logr.CallDepthLogger {
+func (b *Builder) Build() logr.Logger {
 	// Convert the io.Writer to a zapcore.WriteSyncer, if a zapcore.WriteSyncer wasn't already
 	// provided, and lock the resulting zapcore.WriteSyncer to make it thread-safe. Locking is
 	// needed, e.g. for *os.Files.
@@ -290,13 +301,15 @@ func (b *Builder) Build() logr.CallDepthLogger {
 	// We know that the zapr Logger implements logr.CallDepthLogger, so this cast is safe.
 	return zapr.NewLogger(
 		zap.New(zapcore.NewCore(encoder, sink, b.level), opts...),
-	).(logr.CallDepthLogger)
+	)
 }
 
 // FilterStacktraceOrigins removes every line in content that
 // starts with tab. It is meant to be used for filtering call
 // stack output from for example a logger when testing (as the exact
 // lines of caller origin might vary for instance across Go versions).
+//
+// TODO: Make this work with JSON output as well.
 func FilterStacktraceOrigins(content []byte) []byte {
 	s := bufio.NewScanner(bytes.NewReader(content))
 	out := make([]byte, 0, len(content))
