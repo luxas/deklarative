@@ -12,6 +12,7 @@ replace (
 
 require (
 	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/stdr v0.4.0
 	github.com/go-logr/zapr v0.4.0
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.4.1
 	github.com/sebdah/goldie/v2 v2.5.3
@@ -24,5 +25,5 @@ require (
 	go.opentelemetry.io/otel/trace v1.0.0-RC2
 	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.19.0
-	sigs.k8s.io/yaml v1.2.0
+	gopkg.in/yaml.v2 v2.4.0
 )
