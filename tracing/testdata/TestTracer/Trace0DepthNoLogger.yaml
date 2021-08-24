@@ -1,44 +1,36 @@
 # worker.doWork
-- attributes:
-  - key: result
-    type: STRING
-    value: result
+- spanName: worker.doWork
+  attributes:
+    result: result
   errors:
   - error: 'some operation failed: unexpected thing happened'
-  names:
-  - worker.doWork
-  - foo
   startConfig:
     attributes:
-    - key: hello
-      type: BOOL
-      value: true
+      hello: true
   statusChanges:
-  - code: Ok
+  - code: 2
+  nameChanges:
+  - foo
 
 # someOperationPre
-- attributes:
-  - key: arr
-    type: ARRAY
-    value:
+- spanName: someOperationPre
+  attributes:
+    arr:
     - foo
     - bar
-  names:
-  - someOperationPre
   statusChanges:
-  - code: Error
+  - code: 1
     description: this will be visible
 
 # errorOperator
-- events:
+- spanName: errorOperator
+  events:
   - name: SomeOperationError
-  names:
-  - errorOperator
-  - newname
   statusChanges:
-  - code: Ok
+  - code: 2
+  nameChanges:
+  - newname
 
 # afterShutdown
-- names:
-  - afterShutdown
+- spanName: afterShutdown
 

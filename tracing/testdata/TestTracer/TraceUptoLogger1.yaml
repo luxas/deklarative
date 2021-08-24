@@ -1,78 +1,60 @@
 # worker.doWork
-- attributes:
-  - key: result
-    type: STRING
-    value: result
-  - key: log-attr-hello
-    type: FLOAT64
-    value: -1.2
-  - key: log-attr-op-result
-    type: INT64
-    value: -1
-  children:
-  - attributes:
-    - key: arr
-      type: ARRAY
-      value:
-      - foo
-      - bar
-    names:
-    - someOperationPre
-    statusChanges:
-    - code: Error
-      description: this will be visible
-  - events:
-    - name: SomeOperationError
-    names:
-    - errorOperator
-    - newname
-    statusChanges:
-    - code: Ok
+- spanName: worker.doWork
+  attributes:
+    log-attr-hello: -1.2
+    log-attr-op-result: -1
+    result: result
   errors:
   - error: 'some operation failed: unexpected thing happened'
-  names:
-  - worker.doWork
-  - foo
   startConfig:
     attributes:
-    - key: hello
-      type: BOOL
-      value: true
+      hello: true
   statusChanges:
-  - code: Ok
-
-# someOperationPre
-- attributes:
-  - key: arr
-    type: ARRAY
-    value:
-    - foo
-    - bar
+  - code: 2
+  nameChanges:
+  - foo
   children:
-  - attributes:
-    - key: arr
-      type: ARRAY
-      value:
+  - spanName: someOperationPre
+    attributes:
+      arr:
       - foo
       - bar
-    names:
-    - ignoreMe
-  names:
-  - someOperationPre
+    statusChanges:
+    - code: 1
+      description: this will be visible
+  - spanName: errorOperator
+    events:
+    - name: SomeOperationError
+    statusChanges:
+    - code: 2
+    nameChanges:
+    - newname
+
+# someOperationPre
+- spanName: someOperationPre
+  attributes:
+    arr:
+    - foo
+    - bar
   statusChanges:
-  - code: Error
+  - code: 1
     description: this will be visible
+  children:
+  - spanName: ignoreMe
+    attributes:
+      arr:
+      - foo
+      - bar
 
 # errorOperator
-- events:
+- spanName: errorOperator
+  events:
   - name: SomeOperationError
-  names:
-  - errorOperator
-  - newname
   statusChanges:
-  - code: Ok
+  - code: 2
+  nameChanges:
+  - newname
 
 # afterShutdown
-- names:
-  - afterShutdown
+- spanName: afterShutdown
 

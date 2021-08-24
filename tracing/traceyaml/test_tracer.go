@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap/zapcore"
-	"sigs.k8s.io/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 // New returns a composite TracerProvider that captures all data written into
@@ -58,7 +58,9 @@ func (t *testTracer) Start(ctx context.Context, spanName string, opts ...trace.S
 	ctx, span := t.Tracer.Start(ctx, spanName, opts...)
 	newSpan := &testSpan{span, t.provider, nil}
 
-	if parentData := getSpanInfo(ctx); parentData != nil {
+	cfg := trace.NewSpanStartConfig(opts...)
+
+	if parentData := getSpanInfo(ctx); parentData != nil && !cfg.NewRoot() {
 		newSpan.data = parentData.newChild(spanName, opts...)
 	} else {
 		newSpan.data = newSpanInfo(spanName, opts...)
@@ -85,9 +87,12 @@ func (s *testSpan) End(options ...trace.SpanEndOption) {
 
 	if !s.data.isChild {
 		listItem := []*SpanInfo{s.data}
+		// Deliberately use yaml.v2 here as it marshals lists on the same
+		// indentation level as the list key.
+		// TODO: When "our own" YAML library is ready, use that.
 		out, err := yaml.Marshal(listItem)
 		if err == nil {
-			header := fmt.Sprintf("# %s", s.data.Names[0])
+			header := fmt.Sprintf("# %s", s.data.SpanName)
 			out = bytes.Join([][]byte{[]byte(header), out, nil}, []byte{'\n'})
 			err = multierr.Combine(err, writeNoLength(s.provider.ws, out))
 		}
@@ -148,7 +153,7 @@ func (s *testSpan) SetName(name string) {
 	s.data.mu.Lock()
 	defer s.data.mu.Unlock()
 
-	s.data.Names = append(s.data.Names, name)
+	s.data.NameChanges = append(s.data.NameChanges, name)
 	s.Span.SetName(name)
 }
 
@@ -156,7 +161,7 @@ func (s *testSpan) SetAttributes(kv ...attribute.KeyValue) {
 	s.data.mu.Lock()
 	defer s.data.mu.Unlock()
 
-	s.data.Attributes = append(s.data.Attributes, mapAttrs(kv)...)
+	attrsInto(kv, s.data.Attributes)
 	s.Span.SetAttributes(kv...)
 }
 

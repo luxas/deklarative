@@ -19,27 +19,28 @@ func (td *SpanInfo) newChild(spanName string, opts ...trace.SpanStartOption) *Sp
 
 func eventConfigFrom(opts ...trace.EventOption) EventConfig {
 	ec := trace.NewEventConfig(opts...)
-	return EventConfig{Attributes: mapAttrs(ec.Attributes())}
+	return EventConfig{Attributes: newAttrs(ec.Attributes())}
 }
 
 func newSpanInfo(spanName string, opts ...trace.SpanStartOption) *SpanInfo {
 	return &SpanInfo{
-		Names:       []string{spanName},
+		SpanName:    spanName,
 		StartConfig: spanConfigFromStart(opts...),
+		Attributes:  make(Attributes),
 		mu:          &sync.Mutex{},
 	}
 }
 
-func mapAttrs(attrs []attribute.KeyValue) []Attribute {
-	res := make([]Attribute, len(attrs))
-	for i, attr := range attrs {
-		res[i] = Attribute{
-			Key:   string(attr.Key),
-			Value: attr.Value.AsInterface(),
-			Type:  attr.Value.Type().String(),
-		}
+func newAttrs(attrList []attribute.KeyValue) Attributes {
+	attrMap := make(Attributes, len(attrList))
+	attrsInto(attrList, attrMap)
+	return attrMap
+}
+
+func attrsInto(attrList []attribute.KeyValue, attrMap Attributes) {
+	for _, attr := range attrList {
+		attrMap[string(attr.Key)] = attr.Value.AsInterface()
 	}
-	return res
 }
 
 func spanConfigFromStart(opts ...trace.SpanStartOption) *SpanConfig {
@@ -58,7 +59,7 @@ func spanConfigFromEnd(opts ...trace.SpanEndOption) *SpanConfig {
 
 func spanConfigFrom(sc *trace.SpanConfig) *SpanConfig {
 	return &SpanConfig{
-		Attributes: mapAttrs(sc.Attributes()),
+		Attributes: newAttrs(sc.Attributes()),
 		Links:      sc.Links(),
 		NewRoot:    sc.NewRoot(),
 		SpanKind:   sc.SpanKind(),
