@@ -19,9 +19,9 @@ DEBUG(v=1)	errorOperator	manual entry about some operation error
 DEBUG(v=1)	errorOperator	ending span
 INFO(v=0)	worker.doWork	got operation result	{"op-result": -1}
 ERROR	worker.doWork	span error	{"error": "some operation failed: unexpected thing happened"}
-github.com/luxas/deklarative-api-runtime/tracing.doWork
-github.com/luxas/deklarative-api-runtime/tracing.testCore
-github.com/luxas/deklarative-api-runtime/tracing.TestTracer.func9
+github.com/luxas/deklarative/tracing.doWork
+github.com/luxas/deklarative/tracing.testCore
+github.com/luxas/deklarative/tracing.TestTracer.func9
 testing.tRunner
 INFO(v=0)	worker.doWork	ending span
 INFO(v=0)	someOperationPre	starting span

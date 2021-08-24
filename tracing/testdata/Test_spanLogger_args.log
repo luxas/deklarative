@@ -2,14 +2,14 @@ INFO(v=0)	foo	good, no args
 INFO(v=0)	foo	good	{"hello-1": 123}
 DPANIC	foo	odd number of arguments passed as key-value pairs for logging	{"ignored key": "hello-2"}
 github.com/go-logr/zapr.(*zapLogger).Info
-github.com/luxas/deklarative-api-runtime/tracing.(*spanLogger).Info
-github.com/luxas/deklarative-api-runtime/tracing.Test_spanLogger_args
+github.com/luxas/deklarative/tracing.(*spanLogger).Info
+github.com/luxas/deklarative/tracing.Test_spanLogger_args
 testing.tRunner
 INFO(v=0)	foo	odd number of arguments are ignored
 DPANIC	foo	non-string key argument passed to logging, ignoring all later arguments	{"invalid key": 123}
 github.com/go-logr/zapr.(*zapLogger).Info
-github.com/luxas/deklarative-api-runtime/tracing.(*spanLogger).Info
-github.com/luxas/deklarative-api-runtime/tracing.Test_spanLogger_args
+github.com/luxas/deklarative/tracing.(*spanLogger).Info
+github.com/luxas/deklarative/tracing.Test_spanLogger_args
 testing.tRunner
 INFO(v=0)	foo	non-string key invocations ignored	{"hello-4": true}
 INFO(v=0)	foo.log	bar	{"array": ["one", "two"]}
@@ -17,13 +17,13 @@ ERROR	foo	good, no args	{"error": "sample error"}
 ERROR	foo	good	{"hello-5": false, "sample-float": 1.2, "error": "sample error"}
 DPANIC	foo	odd number of arguments passed as key-value pairs for logging	{"ignored key": "hello-6"}
 github.com/go-logr/zapr.(*zapLogger).Error
-github.com/luxas/deklarative-api-runtime/tracing.(*spanLogger).Error
-github.com/luxas/deklarative-api-runtime/tracing.Test_spanLogger_args
+github.com/luxas/deklarative/tracing.(*spanLogger).Error
+github.com/luxas/deklarative/tracing.Test_spanLogger_args
 testing.tRunner
 ERROR	foo	odd number of arguments are ignored	{"error": "sample error"}
 DPANIC	foo	non-string key argument passed to logging, ignoring all later arguments	{"invalid key": 123}
 github.com/go-logr/zapr.(*zapLogger).Error
-github.com/luxas/deklarative-api-runtime/tracing.(*spanLogger).Error
-github.com/luxas/deklarative-api-runtime/tracing.Test_spanLogger_args
+github.com/luxas/deklarative/tracing.(*spanLogger).Error
+github.com/luxas/deklarative/tracing.Test_spanLogger_args
 testing.tRunner
 ERROR	foo	non-string key invocations ignored	{"hello-8": true, "error": "sample error"}

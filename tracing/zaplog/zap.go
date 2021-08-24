@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
-	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
+	"github.com/luxas/deklarative/tracing/filetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

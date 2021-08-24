@@ -1,4 +1,4 @@
-module github.com/luxas/deklarative-api-runtime/tracing
+module github.com/luxas/deklarative/tracing
 
 go 1.16
 

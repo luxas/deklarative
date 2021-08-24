@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
-	"github.com/luxas/deklarative-api-runtime/tracing/tracingfakes"
+	"github.com/luxas/deklarative/tracing/filetest"
+	"github.com/luxas/deklarative/tracing/tracingfakes"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/attribute"

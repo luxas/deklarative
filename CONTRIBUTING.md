@@ -1,6 +1,6 @@
 # Contributing
 
-`deklarative-api-runtime` is [Apache 2.0 licensed](LICENSE) and accepts contributions
+`deklarative` is [Apache 2.0 licensed](LICENSE) and accepts contributions
 via GitHub pull requests. This document outlines some of the conventions on
 to make it easier to get your contribution accepted.
 
@@ -13,7 +13,7 @@ By contributing to this project you agree to the Developer Certificate of
 Origin (DCO). This document was created by the Linux Kernel community and is a
 simple statement that you, as a contributor, have the legal right to make the
 contribution. No action from you is required, but it's a good idea to see the
-[DCO](DCO) file for details before you start contributing code to `deklarative-api-runtime`.
+[DCO](DCO) file for details before you start contributing code to `deklarative`.
 
 ## Communications
 
@@ -50,7 +50,7 @@ get asked to resubmit the PR or divide the changes into more than one PR.
 
 ### Format of the Commit Message
 
-For `deklarative-api-runtime` we prefer the following rules for good commit messages:
+For `deklarative` we prefer the following rules for good commit messages:
 
 - Limit the subject to 50 characters and write as the continuation
   of the sentence "If applied, this commit will ..."

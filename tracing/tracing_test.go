@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
-	"github.com/luxas/deklarative-api-runtime/tracing/zaplog"
+	"github.com/luxas/deklarative/tracing/filetest"
+	"github.com/luxas/deklarative/tracing/zaplog"
 	"github.com/sebdah/goldie/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

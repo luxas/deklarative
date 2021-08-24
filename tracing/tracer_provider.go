@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
-	"github.com/luxas/deklarative-api-runtime/tracing/traceyaml"
+	"github.com/luxas/deklarative/tracing/filetest"
+	"github.com/luxas/deklarative/tracing/traceyaml"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"

@@ -14,7 +14,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/luxas/deklarative-api-runtime/tracing/zaplog"
+	"github.com/luxas/deklarative/tracing/zaplog"
 	"go.opentelemetry.io/otel/trace"
 )
 

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/luxas/deklarative-api-runtime/tracing/filetest"
+	"github.com/luxas/deklarative/tracing/filetest"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -124,7 +124,7 @@ func ExampleBuilder_calldepth() {
 	// INFO(v=0)	bar	some message	{"foo": true}
 	// DPANIC	bar	strongly-typed Zap Field passed to logr	{"bar": 1, "zap field": {"Key":"foo","Type":10,"Integer":1102682522,"String":"","Interface":null}}
 	// github.com/go-logr/zapr.(*zapLogger).Info
-	// github.com/luxas/deklarative-api-runtime/tracing/zaplog.ExampleBuilder_calldepth
+	// github.com/luxas/deklarative/tracing/zaplog.ExampleBuilder_calldepth
 	// testing.runExample
 	// testing.runExamples
 	// testing.(*M).Run
@@ -132,7 +132,7 @@ func ExampleBuilder_calldepth() {
 	// runtime.main
 	// DEBUG(v=1)	bar	hello	{"bar": 1}
 	// ERROR	bar	I don't know what happened here	{"duration": "1m0s", "error": "unexpected error"}
-	// github.com/luxas/deklarative-api-runtime/tracing/zaplog.ExampleBuilder_calldepth
+	// github.com/luxas/deklarative/tracing/zaplog.ExampleBuilder_calldepth
 	// testing.runExample
 	// testing.runExamples
 	// testing.(*M).Run
