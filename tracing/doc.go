@@ -40,7 +40,7 @@ executing, span A also ends after a while.
 
 Using the TraceEnabler interface, the user can decide what spans are "enabled"
 and hence sent to the TracerProvider backend, for example, Jaeger. By default, spans
-of any depth are sent to the backing TracerProvider, but this is often not desireable
+of any depth are sent to the backing TracerProvider, but this is often not desirable
 in production. The TraceEnabler can decide whether a span should be enabled based on
 all data in tracing.TracerConfig, which includes e.g. span name, trace depth and so on.
 
