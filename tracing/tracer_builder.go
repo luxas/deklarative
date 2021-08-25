@@ -8,28 +8,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-/*
-	If TracerBuilder.WithLogger is set, that logger will be used
-	If SetAcquireLoggerFunc is set, it'll be used to get the logger
-	If the context carries a logger, it'll be used
-	If SetLogger is set, it'll be used.
-	Otherwise, logr.Discard will be used.
-
-	If at some point a non-discard logger was used, its Enabled() function
-	will tell whether to log and trace, or not.
-	If a discard logger was used, traces will be always be collected using
-	the given TracerProvider (which indeed can be a NoopTracerProvider).
-
-	If TracerBuilder.WithTracerProvider is set, that provider is used.
-	If the context carries a Span with a non-noop TracerProvider, it'll be used
-	   (this is how chaining of spans work).
-	If SetGlobalTracerProvider is set, it'll be used.
-	Otherwise, trace.NewNoopTracerProvider() is used.
-
-
-
-*/
-
 //nolint:gochecknoglobals
 var (
 	noopProvider = trace.NewNoopTracerProvider()
