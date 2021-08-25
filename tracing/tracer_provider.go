@@ -156,14 +156,14 @@ func (b *TracerProviderBuilder) WithTraceEnabler(te TraceEnabler) *TracerProvide
 // TraceUpto includes traces with depth less than or equal to the given depth
 // argument.
 func (b *TracerProviderBuilder) TraceUpto(depth Depth) *TracerProviderBuilder {
-	return b.WithTraceEnabler(maxDepthEnabler(depth))
+	return b.WithTraceEnabler(MaxDepthEnabler(depth))
 }
 
 // TraceUptoLogger includes trace data as long as the logger is enabled.
 // If a logger is not provided in the context (that is, it is logr.Discard),
 // then there's no depth limit for the tracing.
 func (b *TracerProviderBuilder) TraceUptoLogger() *TracerProviderBuilder {
-	return b.WithTraceEnabler(loggerEnabler())
+	return b.WithTraceEnabler(LoggerEnabler())
 }
 
 // TestYAML is a shorthand for TestYAMLTo, that writes to a testdata/ file

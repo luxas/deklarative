@@ -12,13 +12,20 @@ func (f traceEnablerFunc) Enabled(ctx context.Context, opts *TracerConfig) bool 
 	return f(ctx, opts)
 }
 
-func maxDepthEnabler(maxDepth Depth) TraceEnabler {
+// MaxDepthEnabler is a TraceEnabler that allows all spans of trace depth below and
+// equal to maxDepth. This is similar to how logr.Loggers are enabled upto a given
+// log level.
+func MaxDepthEnabler(maxDepth Depth) TraceEnabler {
 	return traceEnablerFunc(func(_ context.Context, opts *TracerConfig) bool {
 		return opts.Depth <= maxDepth
 	})
 }
 
-func loggerEnabler() TraceEnabler {
+// LoggerEnabler is a TraceEnabler that allows all spans as long as the Logger
+// from the context is enabled. If the Logger is logr.Discard, any trace depth
+// is allowed. This is useful when the Logger is the true source of verboseness
+// allowance.
+func LoggerEnabler() TraceEnabler {
 	return traceEnablerFunc(func(_ context.Context, opts *TracerConfig) bool {
 		return opts.Logger.Enabled() || isDiscard(opts.Logger)
 	})
