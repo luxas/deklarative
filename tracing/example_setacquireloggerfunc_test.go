@@ -23,7 +23,7 @@ func myAcquire(ctx context.Context) tracing.Logger {
 	return stdr.New(golog.New(filetest.ExampleStdout, "FooLogger: ", 0))
 }
 
-func Example_setAcquireLoggerFunc() {
+func ExampleSetAcquireLoggerFunc() {
 	// This is an example of how to use this framework with no TraceProvider
 	// at all.
 

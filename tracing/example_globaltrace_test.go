@@ -16,7 +16,7 @@ func requireNonNil(err error) {
 	}
 }
 
-func Example_globalTracing() {
+func ExampleTracerProviderBuilder() {
 	// Create a new TracerProvider that logs trace data to os.Stdout, and
 	// is registered globally. It won't trace deeper than 2 child layers.
 	err := tracing.Provider().
